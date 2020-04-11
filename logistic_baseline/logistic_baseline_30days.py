@@ -5,7 +5,11 @@ import matplotlib.ticker as ticker
 import scipy.optimize as opt
 import numpy as np
 import datetime
+import os
 from datetime import date
+
+path = "E:\8_Data Science in Techo-Socio-Echo Systems\model"	
+os.chdir(path)
 
 def logistic(x, k, x0):
     return 1 / (1. + np.exp(-k * (x - x0)))
@@ -39,9 +43,9 @@ def pred_logistic(x_train, y_train, x_pred, L):
     
     return y_pred, y_pred_lower, y_pred_upper
 
-confirmed = pd.read_csv('time_series_covid19_confirmed_global.csv')
-deaths = pd.read_csv('time_series_covid19_deaths_global.csv')
-recovered = pd.read_csv('time_series_covid19_recovered_global.csv')
+confirmed = pd.read_csv('./Data/time_series_covid19_confirmed_global.csv')
+deaths = pd.read_csv('./Data/time_series_covid19_deaths_global.csv')
+recovered = pd.read_csv('./Data/time_series_covid19_recovered_global.csv')
 
 colnames = confirmed.columns.tolist()
 
@@ -64,7 +68,7 @@ for delta in delta_arr:
     today = date.today()-datetime.timedelta(days=delta)
     next_pred_date = today+datetime.timedelta(days=prediction_delta)
     
-    file_str = "logistic_baseline_predictions_new/30day_prediction_" + str(today) + ".csv"
+    file_str = "./Prediction/30day_prediction_" + str(today) + ".csv"
     print(file_str)
     
     f = open(file_str,"w+")
@@ -171,26 +175,30 @@ for delta in delta_arr:
             serious_upper = ""
 
         next_pred_date_str = str(next_pred_date)+","
-        loc1_str = ","
-        loc2_str = str(countries[i]).replace(',', ' ')+","
+        if(countries[i]=='China_Hong Kong'):
+            loc1_str = "Hong Kong" + ","
+            loc2_str = "China" + ","
+        else:
+            loc1_str = ","
+            loc2_str = str(countries[i]).replace(',', ' ')+","  
         if conf_flag == 0:
-            n_str = str(confirmed_pred[-1])+","+str(confirmed_pred_lower[-1])+","+str(confirmed_pred_upper[-1])+","
+            n_str = str(round(confirmed_pred[-1]))+","+str(round(confirmed_pred_lower[-1]))+","+str(round(confirmed_pred_upper[-1]))+","
         else:
             n_str = ","+","+","
             
         if rec_flag == 0:
-            r_str = str(recovered_pred[-1])+","+str(recovered_pred_lower[-1])+","+str(recovered_pred_upper[-1])+","
+            r_str = str(round(recovered_pred[-1]))+","+str(round(recovered_pred_lower[-1]))+","+str(round(recovered_pred_upper[-1]))+","
         else:
             r_str = ","+","+","
           
         if d_flag == 0:
-            d_str = str(deaths_pred[-1])+","+str(deaths_pred_lower[-1])+","+str(deaths_pred_upper[-1])+","
+            d_str = str(round(deaths_pred[-1]))+","+str(round(deaths_pred_lower[-1]))+","+str(round(deaths_pred_upper[-1]))+","
         else:
             d_str = ","+","+","
          
         t_str = ","+","+","
         m_str = str(next_mortality)+","+str(next_mortality_lower)+","+str(next_mortality_upper) + ","
-        c_str = str(serious)+","+str(serious_lower)+","+str(serious_upper)+ "\n"         
+        c_str = str(round(serious))+","+str(round(serious_lower))+","+str(round(serious_upper))+ "\n"        
         
         f.write(loc1_str+loc2_str+next_pred_date_str+n_str+r_str+d_str+t_str+m_str+c_str)
     

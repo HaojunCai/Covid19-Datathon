@@ -28,8 +28,8 @@ start = datetime.datetime.strptime(colnames[4], "%m/%d/%y")
 end = datetime.datetime.strptime(colnames[-1], "%m/%d/%y")
 date_generated = [start + datetime.timedelta(days=x) for x in range(0, (end-start).days)]
 
-countries = ['Argentina', 'Egypt', 'Nigeria']
-population = [44.49*10**6, 98.42*10**6, 195.9*10**6]
+countries = ['Morocco', 'Egypt', 'Nigeria']
+population = [36.03*10**6, 98.42*10**6, 195.9*10**6]
 
 # time delta for prediction in days
 prediction_delta = 2
@@ -90,8 +90,8 @@ def pred_sir(S, I, R, D, days, days_delta):
     # plot 
     #plt.plot(t_pred,y_pred[:,1],'r-',label=r'i')
     #plt.plot(t,obs[:,1], 'r--', label=r'i_obs')
-    plt.plot(t_pred,y_pred[:,3],'b-',label=r'd')
-    plt.plot(t,obs[:,3], 'b--', label=r'd_obs')
+    plt.plot(t_pred,y_pred[:,0],'b-',label=r'd')
+    plt.plot(t,obs[:,0], 'b--', label=r'd_obs')
     #plt.plot(t_pred,y_pred[:,2],'g-',label=r'r')
     #plt.plot(t,obs[:,2], 'g--', label=r'r_obs')
     plt.ylabel('response')

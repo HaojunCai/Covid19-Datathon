@@ -90,8 +90,8 @@ def pred_sir(S, I, R, D, days, days_delta):
     # plot 
     #plt.plot(t_pred,y_pred[:,1],'r-',label=r'i')
     #plt.plot(t,obs[:,1], 'r--', label=r'i_obs')
-    plt.plot(t_pred,y_pred[:,0],'b-',label=r's')
-    plt.plot(t,obs[:,0], 'b--', label=r's_obs')
+    plt.plot(t_pred,y_pred[:,3],'b-',label=r'd')
+    plt.plot(t,obs[:,3], 'b--', label=r'd_obs')
     #plt.plot(t_pred,y_pred[:,2],'g-',label=r'r')
     #plt.plot(t,obs[:,2], 'g--', label=r'r_obs')
     plt.ylabel('response')
@@ -178,14 +178,14 @@ for i in range(len(countries)):
         n_str = ","+","+","
     
     if rec_flag == 0: 
-        r_str = str(round(deaths_pred[-1]))+","+str(round(deaths_pred_lower[-1]))+","+str(round(deaths_pred_upper[-1]))+","
-    else: 
-        r_str = ","+","+","
-    
-    if d_flag == 0 :
-        d_str = str(round(recovered_pred[-1]))+","+str(round(recovered_pred_lower[-1]))+","+str(round(recovered_pred_upper[-1]))+","  
+        d_str = str(round(deaths_pred[-1]))+","+str(round(deaths_pred_lower[-1]))+","+str(round(deaths_pred_upper[-1]))+","
     else: 
         d_str = ","+","+","
+    
+    if d_flag == 0 :
+        r_str = str(round(recovered_pred[-1]))+","+str(round(recovered_pred_lower[-1]))+","+str(round(recovered_pred_upper[-1]))+","  
+    else: 
+        r_str = ","+","+","
     
     t_str = ","+","+","
     m_str = str(next_mortality)+","+str(next_mortality_lower)+","+str(next_mortality_upper) + ","

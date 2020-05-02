@@ -55,30 +55,28 @@ class preprocess():
 
 def increment(raw, days):
     incre = raw.copy()
-    for i in range(len(incre)-1):
-        incre[i+1] = raw[i+1]-raw[i]
+    for i in range(incre.shape[0]-1):
+        incre[i+1,:] = raw[i+1,:]-raw[i,:]
 
     new_incre= incre.copy()
     #induce some noise?
     np.random.seed(7)
-    var = np.zeros(len(new_incre))
-    for i in range(len(new_incre)):
+    var = np.zeros(new_incre.shape)
+    for i in range(new_incre.shape[0]):
         if i < int((average_length+1)/2)-1:
             continue
-        var[i] = np.var(incre[i:i+average_length])
-        new_incre[i] += np.random.normal(0,np.sqrt(var[i]),1)
+        var[i,:] = np.var(incre[i:i+average_length,:],axis=0)
+        new_incre[i,:] += np.random.normal(0,np.sqrt(var[i,:]),var.shape[1])
 
 
 
     #calculate the cumulative value
-    new_cumulative = np.zeros((days))
-
+    new_cumulative = np.zeros((days,incre.shape[1]))
     for i in range(days):
         if i == 0:
-            new_cumulative[i] = new_incre[i]
+            new_cumulative[i,:] = new_incre[i,:]
         else:
-            new_cumulative[i] = new_cumulative[i-1] + new_incre[i]
-
+            new_cumulative[i,:] = new_cumulative[i-1,:] + new_incre[i,:]
     return new_cumulative
 
 
@@ -138,26 +136,13 @@ def pred_sir(S, I, R, D, days, days_delta):
     t_pred_extended = np.linspace(0,extended_days_pred,extended_days_pred+1)
 
     y_pred = sir_int_(t_pred_extended, vals[0], vals[1], vals[2])
-    for i in range(4):
-        if i == 0 :
-            new_pred = increment(y_pred[:,0],days_pred)
-        else:
-            new_pred = np.vstack((new_pred,increment(y_pred[:,i],days_pred)))
+    new_pred = increment(y_pred,days_pred)
 
     y_pred_upper = sir_int_(t_pred, vals[0]-1.96*sigma_ab[0], vals[1]-1.96*sigma_ab[1], vals[2]-1.96*sigma_ab[2])
-    for i in range(4):
-        if i == 0 :
-            new_upper = increment(y_pred_upper[:,i],days_pred)
-        else:
-            new_upper = np.vstack((new_upper,increment(y_pred_upper[:,i],days_pred)))
-    print(new_upper.shape)
-    y_pred_lower = sir_int_(t_pred, vals[0]+1.96*sigma_ab[0], vals[1]+1.96*sigma_ab[1], vals[2]+1.96*sigma_ab[2])
-    for i in range(4):
-        if i == 0 :
-            new_lower = increment(y_pred_lower[:,i],days_pred)
-        else:
-            new_lower = np.vstack((new_lower,increment(y_pred_lower[:,i],days_pred)))
+    new_upper = increment(y_pred_upper,days_pred)
 
+    y_pred_lower = sir_int_(t_pred, vals[0]+1.96*sigma_ab[0], vals[1]+1.96*sigma_ab[1], vals[2]+1.96*sigma_ab[2])
+    new_lower = increment(y_pred_lower,days_pred)
 
 
     # plot
@@ -221,21 +206,21 @@ for i in range(len(countries)):
 
 
     # recover
-    recovered_pred = pred[2,:]
-    recovered_pred_lower = pred_lower[2,:]
+    recovered_pred = pred[:,2]
+    recovered_pred_lower = pred_lower[:,2]
     recovered_pred_lower[recovered_pred_lower<0] = 0
-    recovered_pred_upper = pred_upper[2,:]
+    recovered_pred_upper = pred_upper[:,2]
 
     # death
-    deaths_pred = pred[3,:]
-    deaths_pred_lower = pred_lower[3,:]
+    deaths_pred = pred[:,3]
+    deaths_pred_lower = pred_lower[:,3]
     deaths_pred_lower[deaths_pred_lower<0] = 0
-    deaths_pred_upper = pred_upper[3,:]
+    deaths_pred_upper = pred_upper[:,3]
 
     # confirmed = infected + recovered + death
-    confirmed_pred = pred[1,:] +  recovered_pred + deaths_pred
-    confirmed_pred_lower = pred_lower[1,:] + recovered_pred_lower + deaths_pred_lower
-    confirmed_pred_upper = pred_upper[1,:] + recovered_pred_upper + deaths_pred_upper
+    confirmed_pred = pred[:,1] +  recovered_pred + deaths_pred
+    confirmed_pred_lower = pred_lower[:,1] + recovered_pred_lower + deaths_pred_lower
+    confirmed_pred_upper = pred_upper[:,1] + recovered_pred_upper + deaths_pred_upper
 
     conf_flag = 0
     d_flag = 0
@@ -251,10 +236,6 @@ for i in range(len(countries)):
         next_mortality_lower = ''
         next_mortality_upper = ''
 
-
-    print(confirmed_pred[-1])
-    print(confirmed_pred_lower[-1])
-    print(confirmed_pred_upper[-1])
 
     next_pred_date_str = str(next_pred_date)+","
     loc1_str = ","

@@ -166,7 +166,9 @@ def pred_sir(S, I, R, D, days, days_delta):
 today = date.today()
 next_pred_date = today+datetime.timedelta(days=prediction_delta)
 
-
+#change the directory
+import os
+os.chdir("../..")
 file_str = "./prediction/"+str(prediction_delta)+"day_prediction_" + str(today) + ".csv"
 print(file_str)
 

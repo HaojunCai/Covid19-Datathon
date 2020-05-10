@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import pandas as pd
 import datetime
-from datetime import date
+from datetime import date, timedelta
 
 
 
@@ -29,15 +29,15 @@ end = datetime.datetime.strptime(colnames[-1], "%m/%d/%y")
 date_generated = [start + datetime.timedelta(days=x) for x in range(0, (end-start).days)]
 
 #countries = ['Switzerland', 'Italy', 'Germany', 'US',  'Spain', 'United Kingdom', 'Japan', 'China_Hong Kong', 'Singapore', 'India', 'Iran']
-countries = ['Switzerland', 'Italy', 'Germany', 'US',  'Spain', 'Singapore', 'India', 'Iran','Japan']
+countries = ['Switzerland', 'Italy', 'Germany', 'US',  'Spain', 'Singapore', 'India', 'Iran']
 #population = [8.57e6, 60.5e6, 82.8e6, 327.2e6,  46.66e6, 66.44e6, 126.4e6, 7.50e6, 5.85e6, 1380e6, 83.99e6]
-population = [8.57e6, 60.5e6, 82.8e6, 327.2e6,  46.66e6,  5.85e6, 1380e6, 83.99e6, 126.4e6]
+population = [8.57e6, 60.5e6, 82.8e6, 327.2e6,  46.66e6,  5.85e6, 1380e6, 83.99e6]
 #countries = ['Italy']
 #population = [82.8e6]
 
 # time delta for prediction in days
 prediction_delta = int(sys.argv[1])
-average_length = 5
+average_length = 4
 fit_length = 7
 
 class preprocess():
@@ -148,29 +148,20 @@ def pred_sir(S, I, R, D, days, days_delta):
     # plot
     #plt.plot(t_pred,y_pred[:,1],'r-',label=r'i')
     #plt.plot(t,obs[:,1], 'r--', label=r'i_obs')
-    plt.plot(y_pred[:,1],label=r'sa')
-    plt.plot(new_pred[:,1],'b-',label=r's')
-    plt.plot(t,obs[:,1], 'b--', label=r's_obs')
-    #plt.plot(t_pred,y_pred[:,2],'g-',label=r'r')
-    #plt.plot(t,obs[:,2], 'g--', label=r'r_obs')
-    plt.ylabel('response')
-    plt.xlabel('time')
-    plt.legend(loc='best')
-    plt.show()
+
 
     return new_pred, new_lower, new_upper
 
 
 
 ########################################################
-today = date.today()
-next_pred_date = today+datetime.timedelta(days=prediction_delta)
-
+today = date.today()-timedelta(days=1)
+next_pred_date = today+timedelta(days=prediction_delta)
 #change the directory
 import os
 os.chdir("../..")
+
 file_str = "./prediction/"+str(prediction_delta)+"day_prediction_" + str(today) + ".csv"
-print(file_str)
 
 f = open(file_str,"w+")
         #Province/State,Country/Region,Target/Date,N,low95N,high95N,R,low95R,high95R,D,low95D,high95D,T,low95T,high95T,M,low95M,high95M
@@ -186,7 +177,7 @@ for i in range(len(countries)):
 
     start = datetime.datetime.strptime(colnames[4], "%m/%d/%y")
     end = datetime.datetime.strptime(colnames[-1], "%m/%d/%y")
-    date_generated = [datetime.timedelta(days=x) for x in range(0, (end-start).days)]
+    date_generated = [datetime.timedelta(days=x) for x in range(0, (end-start).days-1)]
 
 
     confirmed_region = np.asarray([float(confirmed_region[colnames[4+i+1]]) for i in range(len(date_generated))])
@@ -198,15 +189,23 @@ for i in range(len(countries)):
 
     recovered_region = np.asarray([float(recovered_region[colnames[4+i+1]]) for i in range(len(date_generated))])
     smooth_recovered = preprocess(recovered_region).smooth
-    print
+
     susceptible = population[i] - smooth_confirmed
     infect = smooth_confirmed - smooth_recovered - smooth_deaths
     recover = smooth_recovered
 
     days = fit_length
     pred, pred_upper, pred_lower = pred_sir(susceptible[-days:],infect[-days:],recover[-days:], deaths_region[-days:], days, prediction_delta)
-
-
+    """
+    plt.plot(pred[:,2],'b-',label=r's')
+    plt.plot(recovered_region[-days:], 'b--', label=r's_obs')
+    #plt.plot(t_pred,y_pred[:,2],'g-',label=r'r')
+    #plt.plot(t,obs[:,2], 'g--', label=r'r_obs')
+    plt.ylabel('response')
+    plt.xlabel('time')
+    plt.legend(loc='best')
+    plt.show()
+    """
     # recover
     recovered_pred = pred[:,2]
     recovered_pred_lower = pred_lower[:,2]
@@ -238,29 +237,61 @@ for i in range(len(countries)):
         next_mortality_lower = ''
         next_mortality_upper = ''
 
-
+    critical_length = 9
+    flag = 0
+    compensate = 0
+    if len(confirmed_pred)< critical_length:
+        flag = 1
+        compensate_length = critical_length - len(confirmed_pred)
+        compensate = confirmed_region[-fit_length]-confirmed_region[-(fit_length+compensate_length)]
+        critical_length = len(confirmed_pred)
+    next_recovery = recovered_pred[-1]/confirmed_pred[-1]
     next_pred_date_str = str(next_pred_date)+","
+
+    new_confirmed  = confirmed_pred[-1]-confirmed_pred[-critical_length]+(flag == 1)*compensate
+    new_confirmed_lower = confirmed_pred_lower[-1]-confirmed_pred_lower[-critical_length]+(flag == 1)*compensate
+    new_confirmed_upper = confirmed_pred_upper[-1]-confirmed_pred_upper[-critical_length]+(flag == 1)*compensate
+
     loc1_str = ","
     loc2_str = str(countries[i]).replace(',', ' ') + ","
+    print(countries[i])
+    print(next_mortality)
+    print((1-next_recovery))
+    print(new_confirmed/confirmed_pred[-1])
+    fserious = (1-next_recovery)
+    if new_confirmed/confirmed_pred[-1] >= 0.06:
+        fserious = next_mortality
+
+    serious = new_confirmed * fserious
+    serious_lower = new_confirmed_lower * fserious
+    serious_upper = new_confirmed_upper * fserious
+
+    print(serious)
+    """
+    serious = (confirmed_pred[-1]-recovered_pred[-1]-deaths_pred[-1])*fserious
+    serious_lower = (confirmed_pred_lower[-1]-recovered_pred_lower[-1]-deaths_pred_lower[-1])*fserious
+    serious_upper = (confirmed_pred_upper[-1]-recovered_pred_upper[-1]-deaths_pred_upper[-1])*fserious
+    #print(fserious)
+    """
     if conf_flag == 0:
         n_str = str(round(confirmed_pred[-1]))+","+str(round(confirmed_pred_lower[-1]))+","+str(round(confirmed_pred_upper[-1]))+","
     else:
         n_str = ","+","+","
+
+    if rec_flag == 0:
+        r_str = str(round(recovered_pred[-1]))+","+str(round(recovered_pred_lower[-1]))+","+str(round(recovered_pred_upper[-1]))+","
+    else:
+        r_str = ","+","+","
 
     if d_flag == 0:
         d_str = str(round(deaths_pred[-1]))+","+str(round(deaths_pred_lower[-1]))+","+str(round(deaths_pred_upper[-1]))+","
     else:
         d_str = ","+","+","
 
-    if rec_flag == 0 :
-        r_str = str(round(recovered_pred[-1]))+","+str(round(recovered_pred_lower[-1]))+","+str(round(recovered_pred_upper[-1]))+","
-    else:
-        r=r_str = ","+","+","
-
     t_str = ","+","+","
     m_str = str(next_mortality)+","+str(next_mortality_lower)+","+str(next_mortality_upper) + ","
-    c_str = ","+","+"\n"
-    print(loc1_str+loc2_str+next_pred_date_str+n_str+r_str+d_str+t_str+m_str+c_str)
+    c_str = str(round(serious))+","+str(round(serious_lower))+","+str(round(serious_upper))+ "\n"
+
     f.write(loc1_str+loc2_str+next_pred_date_str+n_str+r_str+d_str+t_str+m_str+c_str)
 
 

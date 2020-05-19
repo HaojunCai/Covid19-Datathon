@@ -8,8 +8,8 @@ import datetime
 from datetime import date
 
 average_length = 3
-fit_length = 7
-prediction_delta = 2
+fit_length = 14
+prediction_delta = 7
 
 class preprocess():
     def __init__(self,DataList):
